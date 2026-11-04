@@ -1,27 +1,62 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CourseCard from "@/components/catalog/CourseCard";
 import FilterBar from "@/components/catalog/FilterBar";
 import { mockCourses } from "@/data/mockCourses";
-import { CourseCardSkeleton } from "@/components/ui/Skeleton";
 
 export default function CoursesCatalogPage() {
+  const [courses, setCourses] = useState(mockCourses);
   const [selectedTrack, setSelectedTrack] = useState("All tracks");
   const [selectedLevel, setSelectedLevel] = useState("All levels");
   const [selectedPricing, setSelectedPricing] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filtered = mockCourses.filter((c) => {
-    const matchTrack  = selectedTrack   === "All tracks"  || c.track  === selectedTrack;
-    const matchLevel  = selectedLevel   === "All levels"  || c.level  === selectedLevel;
-    const matchPrice  = selectedPricing === "All"
-      ? true
-      : selectedPricing === "Free" ? !c.isPaid : c.isPaid;
-    const matchSearch = !searchQuery || [c.title, c.summary, c.track]
-      .some((s) => s?.toLowerCase().includes(searchQuery.toLowerCase()));
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCatalog() {
+      try {
+        const res = await fetch("/api/courses");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.courses && Array.isArray(data.courses) && data.courses.length > 0) {
+            // Deduplicate by slug, favoring published database courses
+            const dbSlugs = new Set(data.courses.map((c) => c.slug));
+            const merged = [
+              ...data.courses,
+              ...mockCourses.filter((mc) => !dbSlugs.has(mc.slug)),
+            ];
+            if (isMounted) {
+              setCourses(merged);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch remote course catalog; using mock fallback:", err);
+      }
+    }
+    loadCatalog();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filtered = courses.filter((c) => {
+    const matchTrack = selectedTrack === "All tracks" || c.track === selectedTrack;
+    const matchLevel = selectedLevel === "All levels" || c.level === selectedLevel;
+    const matchPrice =
+      selectedPricing === "All"
+        ? true
+        : selectedPricing === "Free"
+        ? !c.isPaid
+        : c.isPaid;
+    const matchSearch =
+      !searchQuery ||
+      [c.title, c.summary, c.track].some((s) =>
+        s?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     return matchTrack && matchLevel && matchPrice && matchSearch;
   });
 
@@ -76,8 +111,12 @@ export default function CoursesCatalogPage() {
               <div className="w-12 h-12 rounded-full bg-[var(--surface-2)] flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🔍</span>
               </div>
-              <p className="text-[15px] font-semibold text-[var(--text-primary)] mb-1">No labs match your filters</p>
-              <p className="text-[13px] text-[var(--text-muted)]">Try adjusting your track, level, or search query.</p>
+              <p className="text-[15px] font-semibold text-[var(--text-primary)] mb-1">
+                No labs match your filters
+              </p>
+              <p className="text-[13px] text-[var(--text-muted)]">
+                Try adjusting your track, level, or search query.
+              </p>
             </div>
           )}
         </div>

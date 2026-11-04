@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const StepResponseSchema = new mongoose.Schema({
   stepNumber: { type: Number, required: true },
+  title: { type: String, default: "" },
   reflectionText: { type: String, required: true },
   screenshotUrl: { type: String, default: null },
   quizPassed: { type: Boolean, required: true },
@@ -19,6 +20,11 @@ const SubmissionSchema = new mongoose.Schema(
     verificationHash: { type: String, unique: true, sparse: true },
     completedAt: { type: Date, default: null },
     stepResponses: [StepResponseSchema],
+    openingReflection: { type: String, default: null },
+    finalReflection: { type: String, default: null },
+    assessmentScore: { type: Number, default: null },
+    architectureDiagramUrl: { type: String, default: null },
+    courseProblemStatement: { type: String, default: null },
   },
   { timestamps: true }
 );

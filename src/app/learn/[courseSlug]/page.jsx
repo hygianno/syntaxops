@@ -12,6 +12,9 @@ import {
   ExternalLink,
   ChevronRight,
   Sparkles,
+  Layers,
+  DollarSign,
+  Info,
 } from "lucide-react";
 import { mockCourses } from "@/data/mockCourses";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -28,13 +31,43 @@ export default function LearnWorkspacePage({ params }) {
   const router = useRouter();
   const addToast = useToast();
 
-  // Find course definition (fallback to first course if slug not matched)
-  const course =
+  // Find course definition (fallback to mock course initially for zero-delay offline experience)
+  const initialMockCourse =
     mockCourses.find((c) => c.slug === courseSlug) || mockCourses[0];
 
-  const totalSteps = course.steps.length;
+  const [course, setCourse] = useState(initialMockCourse);
+  const [isLoadingCourse, setIsLoadingCourse] = useState(true);
+  const [isArchModalOpen, setIsArchModalOpen] = useState(false);
+
+  // Fetch published course dynamically from database/API
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCourse() {
+      try {
+        const res = await fetch(`/api/courses/${courseSlug}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.course && data.course.steps?.length > 0) {
+            if (isMounted) {
+              setCourse(data.course);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Using offline/fallback course data:", err);
+      } finally {
+        if (isMounted) setIsLoadingCourse(false);
+      }
+    }
+    loadCourse();
+    return () => {
+      isMounted = false;
+    };
+  }, [courseSlug]);
+
+  const totalSteps = course.steps?.length || 1;
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const currentStep = course.steps[currentStepIndex];
+  const currentStep = course.steps?.[currentStepIndex] || course.steps?.[0] || {};
 
   // Mobile / responsive view toggle: 'instructions' or 'notebook'
   const [mobileTab, setMobileTab] = useState("instructions");
@@ -138,6 +171,10 @@ export default function LearnWorkspacePage({ params }) {
         courseSlug: course.slug,
         courseTitle: course.title,
         stepResponses,
+        courseProblemStatement: course.problemStatement || "",
+        architectureDiagramUrl: course.architecture?.diagramUrl || null,
+        openingReflection: labState["openingReflection"] || null,
+        finalReflection: labState["finalReflection"] || null,
       };
 
       const res = await fetch("/api/submissions/finalize", {
@@ -154,6 +191,8 @@ export default function LearnWorkspacePage({ params }) {
           ...data,
           stepResponses,
           courseSummary: course.summary,
+          courseProblemStatement: course.problemStatement || "",
+          architectureDiagramUrl: course.architecture?.diagramUrl || null,
           track: course.track,
           level: course.level,
         };
@@ -178,7 +217,7 @@ export default function LearnWorkspacePage({ params }) {
   };
 
   // Progress metrics
-  const completedStepsCount = course.steps.filter((s) => {
+  const completedStepsCount = (course.steps || []).filter((s) => {
     const sData = labState[s.stepNumber];
     const words = sData?.reflectionText ? sData.reflectionText.trim().split(/\s+/).filter(Boolean).length : 0;
     return sData?.quizPassed && words >= 20;
@@ -213,11 +252,23 @@ export default function LearnWorkspacePage({ params }) {
           </div>
         </div>
 
-        {/* Center / Right: Stepper Navigation */}
+        {/* Center / Right: Stepper Navigation & Project Context */}
         <div className="flex items-center gap-2">
+          {/* Architecture & Specs button */}
+          {(course.architecture?.diagramUrl || course.problemStatement || course.buildCost) && (
+            <button
+              onClick={() => setIsArchModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[12px] text-[var(--text-secondary)] font-medium transition-colors"
+              title="View Architecture & System Specifications"
+            >
+              <Layers className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <span className="hidden md:inline">Architecture & Specs</span>
+            </button>
+          )}
+
           {/* Step Pill Navigation */}
           <nav className="hidden md:flex items-center gap-1 bg-[var(--surface-2)] p-1 rounded-[8px] border border-[var(--border)]" aria-label="Milestone Progress">
-            {course.steps.map((s, idx) => {
+            {course.steps?.map((s, idx) => {
               const sData = labState[s.stepNumber];
               const words = sData?.reflectionText ? sData.reflectionText.trim().split(/\s+/).filter(Boolean).length : 0;
               const isStepDone = sData?.quizPassed && words >= 20;
@@ -225,7 +276,7 @@ export default function LearnWorkspacePage({ params }) {
 
               return (
                 <button
-                  key={s.stepNumber}
+                  key={s.stepNumber || idx}
                   onClick={() => setCurrentStepIndex(idx)}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-all cursor-pointer ${
                     isActive
@@ -316,9 +367,64 @@ export default function LearnWorkspacePage({ params }) {
             onPrevStep={handlePrevStep}
             onFinalizeLab={handleFinalizeLab}
             isSubmitting={isSubmitting}
+            courseSlug={course.slug}
           />
         </div>
       </div>
+
+      {/* ── Architecture & Project Specs Modal ──────────────── */}
+      <Modal
+        isOpen={isArchModalOpen}
+        onClose={() => setIsArchModalOpen(false)}
+        title="Production Architecture & System Specifications"
+        description={course.title}
+        size="lg"
+      >
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+          {course.problemStatement && (
+            <div className="p-3 rounded-[6px] bg-[var(--surface-2)] border border-[var(--border)]">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                Problem Statement & Real-World Context
+              </div>
+              <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
+                {course.problemStatement}
+              </p>
+            </div>
+          )}
+
+          {course.architecture?.diagramUrl && (
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+                System Topology & Infrastructure Diagram
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={course.architecture.diagramUrl}
+                alt="System Architecture"
+                className="w-full rounded-[6px] border border-[var(--border)] max-h-80 object-contain bg-[var(--surface-3)]"
+              />
+            </div>
+          )}
+
+          {course.architecture?.dataFlow && (
+            <div className="p-3 rounded-[6px] bg-[var(--surface-2)] border border-[var(--border)]">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                Data Flow & Ingress Path
+              </div>
+              <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
+                {course.architecture.dataFlow}
+              </p>
+            </div>
+          )}
+
+          {course.buildCost && (
+            <div className="flex items-center gap-2 p-3 rounded-[6px] bg-[var(--surface-2)] border border-[var(--border)] text-[12px] text-[var(--text-secondary)]">
+              <DollarSign className="w-4 h-4 text-[var(--accent)] shrink-0" />
+              <span><strong>Estimated Infrastructure Cost:</strong> {course.buildCost}</span>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* ── User Profile Binding Modal ──────────────────────── */}
       <Modal
@@ -342,7 +448,7 @@ export default function LearnWorkspacePage({ params }) {
             type="email"
             placeholder="e.g. folarin@example.com"
             value={profileEmail}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setProfileEmail(e.target.value)}
             required
             helperText="Used for unique cryptographic hash verification"
           />

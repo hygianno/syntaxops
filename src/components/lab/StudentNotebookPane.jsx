@@ -26,6 +26,7 @@ export default function StudentNotebookPane({
   onPrevStep,
   onFinalizeLab,
   isSubmitting,
+  courseSlug,
 }) {
   const fileRef = useRef(null);
   const words = wordCount(reflectionText);
@@ -173,7 +174,13 @@ export default function StudentNotebookPane({
               Knowledge check
             </div>
           </div>
-          <SanityQuiz quiz={step.quiz} onPass={onQuizPass} isPassed={quizPassed} />
+          <SanityQuiz
+            quiz={step.quiz}
+            onPass={onQuizPass}
+            isPassed={quizPassed}
+            courseSlug={courseSlug}
+            stepNumber={step.stepNumber}
+          />
         </section>
       </div>
 

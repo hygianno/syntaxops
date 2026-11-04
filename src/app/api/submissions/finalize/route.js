@@ -12,6 +12,11 @@ export async function POST(req) {
       courseSlug,
       courseTitle,
       stepResponses = [],
+      openingReflection = null,
+      finalReflection = null,
+      assessmentScore = null,
+      architectureDiagramUrl = null,
+      courseProblemStatement = null,
     } = body;
 
     if (!userEmail || !courseSlug) {
@@ -45,6 +50,11 @@ export async function POST(req) {
             verificationHash,
             completedAt,
             stepResponses,
+            openingReflection,
+            finalReflection,
+            assessmentScore,
+            architectureDiagramUrl,
+            courseProblemStatement,
           },
           { upsert: true, new: true }
         );
@@ -63,6 +73,11 @@ export async function POST(req) {
       userEmail,
       courseSlug,
       courseTitle,
+      openingReflection,
+      finalReflection,
+      assessmentScore,
+      architectureDiagramUrl,
+      courseProblemStatement,
     });
   } catch (error) {
     console.error("Submission finalization error:", error);

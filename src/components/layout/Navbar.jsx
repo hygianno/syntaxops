@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { label: "My Learning", href: "/my-learning" },
   { label: "Portfolios", href: "/portfolio" },
   { label: "Community", href: "/community" },
+  { label: "Studio", href: "/admin/courses", badge: "Admin" },
 ];
 
 export default function Navbar() {
@@ -103,14 +104,19 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "px-3 py-1.5 rounded-[6px] text-[13px] font-medium",
+                  "px-3 py-1.5 rounded-[6px] text-[13px] font-medium inline-flex items-center gap-1.5",
                   "transition-colors duration-150",
-                  pathname === link.href
+                  pathname.startsWith(link.href) && (link.href !== "/" || pathname === "/")
                     ? "bg-[var(--surface-2)] text-[var(--text-primary)]"
                     : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
                 )}
               >
                 {link.label}
+                {link.badge && (
+                  <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-[var(--accent-subtle)] text-[var(--accent-text)] border border-[var(--accent)]/30 leading-none">
+                    {link.badge}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
@@ -178,9 +184,14 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="block px-3 py-2.5 rounded-[6px] text-[14px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+                className="flex items-center justify-between px-3 py-2.5 rounded-[6px] text-[14px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
               >
-                {link.label}
+                <span>{link.label}</span>
+                {link.badge && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--accent-subtle)] text-[var(--accent-text)] border border-[var(--accent)]/30">
+                    {link.badge}
+                  </span>
+                )}
               </Link>
             ))}
             <Link

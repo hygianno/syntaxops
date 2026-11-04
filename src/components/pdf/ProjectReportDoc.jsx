@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   titleSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   courseTitle: {
     fontSize: 20,
@@ -69,8 +69,8 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 10,
+    gap: 10,
+    marginBottom: 8,
   },
   badge: {
     backgroundColor: "#1E293B",
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     borderColor: "#1E293B",
     borderRadius: 6,
     padding: 12,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   authorLabel: {
     fontSize: 7,
@@ -101,9 +101,37 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#F1F5F9",
   },
+  calloutContainer: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: "#0F172A",
+    borderWidth: 1,
+    borderColor: "#1E293B",
+    borderRadius: 6,
+  },
+  calloutTitle: {
+    fontSize: 8,
+    color: "#38BDF8",
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  calloutBody: {
+    fontSize: 9,
+    lineHeight: 1.4,
+    color: "#CBD5E1",
+  },
+  archImage: {
+    marginTop: 8,
+    maxHeight: 160,
+    objectFit: "contain",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
   stepContainer: {
-    marginBottom: 20,
-    padding: 14,
+    marginBottom: 16,
+    padding: 12,
     backgroundColor: "#0F172A",
     borderWidth: 1,
     borderColor: "#1E293B",
@@ -115,7 +143,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#1E293B",
     paddingBottom: 8,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   stepNumber: {
     fontSize: 9,
@@ -123,7 +151,7 @@ const styles = StyleSheet.create({
     color: "#38BDF8",
   },
   stepTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "bold",
     color: "#F8FAFC",
   },
@@ -137,12 +165,12 @@ const styles = StyleSheet.create({
   },
   reflectionBody: {
     fontSize: 9,
-    lineHeight: 1.5,
+    lineHeight: 1.45,
     color: "#CBD5E1",
   },
   screenshotImage: {
-    marginTop: 10,
-    maxHeight: 180,
+    marginTop: 8,
+    maxHeight: 160,
     objectFit: "contain",
     borderRadius: 4,
     borderWidth: 1,
@@ -168,11 +196,15 @@ export default function ProjectReportDoc({ submission }) {
     userFullName = "Engineer",
     userEmail = "",
     courseTitle = "Cloud Lab",
+    courseProblemStatement = "",
+    architectureDiagramUrl = null,
     track = "Cloud & DevOps",
     level = "Intermediate",
     completedAt = new Date().toISOString(),
     verificationHash = "",
     stepResponses = [],
+    openingReflection = null,
+    finalReflection = null,
   } = submission || {};
 
   const credentialId = formatCredentialId(verificationHash);
@@ -200,7 +232,7 @@ export default function ProjectReportDoc({ submission }) {
           <View style={styles.metaRow}>
             <Text style={styles.badge}>Track: {track}</Text>
             <Text style={styles.badge}>Level: {level}</Text>
-            <Text style={styles.badge}>Verified Status: COMPLETED</Text>
+            <Text style={styles.badge}>Status: VERIFIED & AUDITED</Text>
           </View>
         </View>
 
@@ -222,6 +254,31 @@ export default function ProjectReportDoc({ submission }) {
           </View>
         </View>
 
+        {/* Real-World Problem Statement (if present) */}
+        {courseProblemStatement && (
+          <View style={styles.calloutContainer} wrap={false}>
+            <Text style={styles.calloutTitle}>Engineering Problem Statement</Text>
+            <Text style={styles.calloutBody}>{courseProblemStatement}</Text>
+          </View>
+        )}
+
+        {/* Architecture Topology Diagram (if present) */}
+        {architectureDiagramUrl && (
+          <View style={styles.calloutContainer} wrap={false}>
+            <Text style={styles.calloutTitle}>Audited System Architecture</Text>
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <Image src={architectureDiagramUrl} style={styles.archImage} />
+          </View>
+        )}
+
+        {/* Opening Reflection (if present) */}
+        {openingReflection && (
+          <View style={styles.calloutContainer} wrap={false}>
+            <Text style={styles.calloutTitle}>Pre-Implementation Discovery & Hypotheses</Text>
+            <Text style={styles.calloutBody}>{openingReflection}</Text>
+          </View>
+        )}
+
         {/* Milestones Evidence Walkthrough */}
         {stepResponses.map((step, idx) => (
           <View key={step.stepNumber || idx} style={styles.stepContainer} wrap={false}>
@@ -239,13 +296,21 @@ export default function ProjectReportDoc({ submission }) {
 
             {step.screenshotUrl && (
               <View>
-                <Text style={styles.sectionLabel}>Auditable Terminal Proof:</Text>
+                <Text style={styles.sectionLabel}>Auditable Terminal / Cloud Proof:</Text>
                 {/* eslint-disable-next-line jsx-a11y/alt-text */}
                 <Image src={step.screenshotUrl} style={styles.screenshotImage} />
               </View>
             )}
           </View>
         ))}
+
+        {/* Final Reflection / Post-Mortem (if present) */}
+        {finalReflection && (
+          <View style={styles.calloutContainer} wrap={false}>
+            <Text style={styles.calloutTitle}>Post-Mortem & Synthesis</Text>
+            <Text style={styles.calloutBody}>{finalReflection}</Text>
+          </View>
+        )}
 
         {/* Legal Sign-off Footer */}
         <View style={styles.footer} fixed>
