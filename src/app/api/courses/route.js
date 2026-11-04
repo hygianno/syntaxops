@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Course from "@/models/Course";
-import { mockCourses } from "@/data/mockCourses";
+import { getOfflineCourses } from "@/lib/offlineCourseStore";
 
 export async function GET(req) {
   try {
@@ -27,32 +27,23 @@ export async function GET(req) {
       courses = await Course.find(query).sort({ publishedAt: -1, createdAt: -1 }).lean();
     }
 
-    // Merge or fallback to mock courses
+    // Merge or fallback to offline published courses
     if (!courses || courses.length === 0) {
-      courses = mockCourses.map((mc) => ({
-        ...mc,
+      courses = getOfflineCourses({
         status: "published",
-        estimatedDuration: `${mc.estimatedHours || 2} hours`,
-      }));
+        track: track && track !== "All tracks" ? track : undefined,
+        search,
+      });
 
-      if (track && track !== "All tracks") {
-        courses = courses.filter((c) => c.track === track);
-      }
       if (level && level !== "All levels") {
         courses = courses.filter((c) => c.level === level);
       }
-      if (search) {
-        courses = courses.filter(
-          (c) =>
-            c.title?.toLowerCase().includes(search) ||
-            c.summary?.toLowerCase().includes(search)
-        );
-      }
     }
 
-    return NextResponse.json({ courses, source: db ? "database" : "offline-mock" });
+    return NextResponse.json({ courses, source: db ? "database" : "offline-store" });
   } catch (err) {
-    console.warn("API /courses DB query failed. Serving mock fallback:", err.message);
-    return NextResponse.json({ courses: mockCourses, source: "offline-mock" });
+    console.warn("API /courses DB query failed. Serving offline fallback:", err.message);
+    const fallback = getOfflineCourses({ status: "published" });
+    return NextResponse.json({ courses: fallback, source: "offline-store" });
   }
 }

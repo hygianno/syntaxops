@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Course from "@/models/Course";
 import CourseVersion from "@/models/CourseVersion";
-import { mockCourses } from "@/data/mockCourses";
+import {
+  getOfflineCourseById,
+  saveOfflineCourse,
+  deleteOfflineCourse,
+} from "@/lib/offlineCourseStore";
 
 export async function GET(req, { params }) {
   try {
@@ -18,50 +22,19 @@ export async function GET(req, { params }) {
       }
     }
 
-    // Offline / Mock fallback lookup
-    const mock = mockCourses.find((c) => c._id === id || c.slug === id);
-    if (mock) {
-      const enhancedMock = {
-        ...mock,
-        status: "published",
-        category: "Cloud Engineering",
-        estimatedDuration: `${mock.estimatedHours || 2} hours`,
-        buildCost: { min: 0, max: 0, currency: "USD", freeTierSufficient: true },
-        problemStatement: {
-          whatProblem: "Production cloud setups require robust network tier isolation.",
-          whyImportant: "Exposing internal compute instances directly to the internet is a severe vulnerability.",
-          realWorldContext: "Enterprises segment applications into isolated public ingress and private VPC subnets.",
-          whatWillBuild: "A complete multi-tier AWS network with routing tables and least-privilege security groups.",
-        },
-        architecture: {
-          diagrams: [],
-          dataFlow: "Internet Client -> Internet Gateway -> Public Load Balancer -> Private Application EC2",
-          components: [
-            { name: "Internet Gateway", role: "VPC Ingress", service: "AWS EC2" },
-            { name: "Public Subnets", role: "ALB Load Balancing", service: "AWS VPC" },
-            { name: "Private Subnets", role: "Workload Isolation", service: "AWS VPC" },
-          ],
-        },
-        learningObjectives: [
-          "Provision isolated VPC with CIDR planning.",
-          "Configure Public & Private route tables.",
-          "Verify connectivity and security group inbound filters.",
-        ],
-        openingReflection: {
-          question:
-            "In your own words, what do you think we are going to build, and what do you hope to understand by the end of this project?",
-          instructions: "Document your initial perspective before running commands.",
-          isRequired: true,
-          minWords: 20,
-        },
-      };
-      return NextResponse.json({ course: enhancedMock });
+    // Fallback to offline store (persisted drafts and mock courses)
+    const offlineCourse = getOfflineCourseById(id);
+    if (offlineCourse) {
+      return NextResponse.json({ course: offlineCourse });
     }
 
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   } catch (error) {
     console.error("GET /api/admin/courses/[id] error:", error);
-    return NextResponse.json({ error: "Failed to fetch project details" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch project details" },
+      { status: 500 }
+    );
   }
 }
 
@@ -72,10 +45,11 @@ export async function PUT(req, { params }) {
 
     const db = await connectToDatabase();
     if (!db) {
-      // In offline development without MongoDB connection, echo updated data
+      // In offline development without MongoDB connection, save to offline store
+      const updated = saveOfflineCourse({ ...updates, _id: id });
       return NextResponse.json({
         success: true,
-        course: { ...updates, _id: id, updatedAt: new Date().toISOString() },
+        course: updated,
         offline: true,
       });
     }
@@ -112,7 +86,10 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ success: true, course: updated });
   } catch (error) {
     console.error("PUT /api/admin/courses/[id] error:", error);
-    return NextResponse.json({ error: error.message || "Failed to update project" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to update project" },
+      { status: 500 }
+    );
   }
 }
 
@@ -125,11 +102,16 @@ export async function DELETE(req, { params }) {
       await Course.findOneAndDelete({
         $or: [{ _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }, { slug: id }],
       });
+    } else {
+      deleteOfflineCourse(id);
     }
 
     return NextResponse.json({ success: true, message: "Project deleted successfully" });
   } catch (error) {
     console.error("DELETE /api/admin/courses/[id] error:", error);
-    return NextResponse.json({ error: "Failed to delete project" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete project" },
+      { status: 500 }
+    );
   }
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Course from "@/models/Course";
-import { mockCourses } from "@/data/mockCourses";
+import { getOfflineCourseById } from "@/lib/offlineCourseStore";
 
 export async function GET(req, { params }) {
   try {
@@ -14,40 +14,7 @@ export async function GET(req, { params }) {
     }
 
     if (!course) {
-      const mock = mockCourses.find((c) => c.slug === slug || c._id === slug);
-      if (mock) {
-        course = {
-          ...mock,
-          status: "published",
-          problemStatement: {
-            whatProblem: "Production cloud setups require robust network tier isolation.",
-            whyImportant: "Exposing internal compute instances directly to the internet is a severe vulnerability.",
-            realWorldContext: "Enterprises segment applications into isolated public ingress and private VPC subnets.",
-            whatWillBuild: "A complete multi-tier AWS network with routing tables and least-privilege security groups.",
-          },
-          architecture: {
-            diagrams: [],
-            dataFlow: "Internet Client -> Internet Gateway -> Public Load Balancer -> Private Application EC2",
-            components: [
-              { name: "Internet Gateway", role: "VPC Ingress", service: "AWS EC2" },
-              { name: "Public Subnets", role: "ALB Load Balancing", service: "AWS VPC" },
-              { name: "Private Subnets", role: "Workload Isolation", service: "AWS VPC" },
-            ],
-          },
-          learningObjectives: [
-            "Provision isolated VPC with CIDR planning.",
-            "Configure Public & Private route tables.",
-            "Verify connectivity and security group inbound filters.",
-          ],
-          openingReflection: {
-            question:
-              "In your own words, what do you think we are going to build, and what do you hope to understand by the end of this project?",
-            instructions: "Document your initial perspective before running commands.",
-            isRequired: true,
-            minWords: 20,
-          },
-        };
-      }
+      course = getOfflineCourseById(slug);
     }
 
     if (!course) {
@@ -64,16 +31,21 @@ export async function GET(req, { params }) {
           sanitizedStep.quiz = {
             question: sanitizedStep.quiz.question,
             options: sanitizedStep.quiz.options,
-            // answerIndex is hidden from public client
+            explanation: sanitizedStep.quiz.explanation,
+            // answerIndex is deliberately stripped
           };
         }
         if (sanitizedStep.blocks) {
           sanitizedStep.blocks = sanitizedStep.blocks.map((block) => {
-            if (block.type === "quiz") {
-              const quizData = { ...(block.data || {}) };
-              delete quizData.correctAnswer;
-              delete quizData.answerIndex;
-              return { ...block, data: quizData };
+            if (block.type === "quiz" && block.data) {
+              return {
+                ...block,
+                data: {
+                  question: block.data.question,
+                  options: block.data.options,
+                  explanation: block.data.explanation,
+                },
+              };
             }
             return block;
           });
@@ -85,17 +57,23 @@ export async function GET(req, { params }) {
     if (sanitizedCourse.assessment?.questions) {
       sanitizedCourse.assessment = {
         ...sanitizedCourse.assessment,
-        questions: sanitizedCourse.assessment.questions.map((q) => {
-          const sanitizedQ = { ...q };
-          delete sanitizedQ.correctAnswer;
-          return sanitizedQ;
-        }),
+        questions: sanitizedCourse.assessment.questions.map((q) => ({
+          id: q.id,
+          question: q.question,
+          options: q.options,
+          type: q.type,
+          points: q.points,
+          // correctAnswer is deliberately stripped
+        })),
       };
     }
 
-    return NextResponse.json({ course: sanitizedCourse });
+    return NextResponse.json({ success: true, course: sanitizedCourse });
   } catch (error) {
     console.error("GET /api/courses/[slug] error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch project details" },
+      { status: 500 }
+    );
   }
 }

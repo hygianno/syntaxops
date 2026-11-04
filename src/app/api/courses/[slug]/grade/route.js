@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Course from "@/models/Course";
-import { mockCourses } from "@/data/mockCourses";
+import { getOfflineCourseById } from "@/lib/offlineCourseStore";
 
 export async function POST(req, { params }) {
   try {
@@ -17,7 +17,7 @@ export async function POST(req, { params }) {
     }
 
     if (!course) {
-      course = mockCourses.find((c) => c.slug === slug || c._id === slug);
+      course = getOfflineCourseById(slug);
     }
 
     if (!course) {

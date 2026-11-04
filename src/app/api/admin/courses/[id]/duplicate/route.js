@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Course from "@/models/Course";
-import { mockCourses } from "@/data/mockCourses";
+import { getOfflineCourseById, saveOfflineCourse } from "@/lib/offlineCourseStore";
 
 export async function POST(req, { params }) {
   try {
@@ -16,7 +16,7 @@ export async function POST(req, { params }) {
     }
 
     if (!original) {
-      original = mockCourses.find((c) => c._id === id || c.slug === id);
+      original = getOfflineCourseById(id);
     }
 
     if (!original) {
@@ -44,12 +44,7 @@ export async function POST(req, { params }) {
     if (db) {
       duplicatedCourse = await Course.create(duplicatedData);
     } else {
-      duplicatedCourse = {
-        _id: `custom_${Date.now()}`,
-        ...duplicatedData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      duplicatedCourse = saveOfflineCourse(duplicatedData);
     }
 
     return NextResponse.json({ success: true, course: duplicatedCourse }, { status: 201 });

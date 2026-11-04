@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Course from "@/models/Course";
-import { mockCourses } from "@/data/mockCourses";
+import { getOfflineCourses, saveOfflineCourse } from "@/lib/offlineCourseStore";
 
 export async function GET(req) {
   try {
@@ -12,6 +12,7 @@ export async function GET(req) {
 
     const db = await connectToDatabase();
     let courses = [];
+    let stats = { total: 0, published: 0, draft: 0, archived: 0 };
 
     if (db) {
       const query = {};
@@ -25,56 +26,38 @@ export async function GET(req) {
         ];
       }
       courses = await Course.find(query).sort({ updatedAt: -1 }).lean();
+
+      // Compute stats
+      const allCourses = await Course.find({}).lean();
+      stats = {
+        total: allCourses.length,
+        published: allCourses.filter((c) => c.status === "published").length,
+        draft: allCourses.filter((c) => c.status === "draft").length,
+        archived: allCourses.filter((c) => c.status === "archived").length,
+      };
+    } else {
+      // Offline fallback store (persists local drafts, updates, and mock courses)
+      courses = getOfflineCourses({ status, track, search });
+      const allOfflineCourses = getOfflineCourses({});
+      stats = {
+        total: allOfflineCourses.length,
+        published: allOfflineCourses.filter((c) => c.status === "published").length,
+        draft: allOfflineCourses.filter((c) => c.status === "draft").length,
+        archived: allOfflineCourses.filter((c) => c.status === "archived").length,
+      };
     }
 
-    // If database has no courses yet (e.g. initial setup or offline development),
-    // merge in mockCourses formatted with standard Course Studio attributes
-    if (!courses || courses.length === 0) {
-      courses = mockCourses.map((mc) => ({
-        ...mc,
-        status: "published",
-        category: mc.track === "Cloud & DevOps" ? "AWS & Kubernetes" : "Software Engineering",
-        estimatedDuration: `${mc.estimatedHours || 2} hours`,
-        buildCost: { min: 0, max: 0, currency: "USD", freeTierSufficient: true },
-        updatedAt: new Date().toISOString(),
-      }));
-
-      if (status !== "all") {
-        courses = courses.filter((c) => c.status === status);
-      }
-      if (track !== "all") {
-        courses = courses.filter((c) => c.track === track);
-      }
-      if (search) {
-        courses = courses.filter(
-          (c) =>
-            c.title?.toLowerCase().includes(search) ||
-            c.summary?.toLowerCase().includes(search) ||
-            c.slug?.toLowerCase().includes(search)
-        );
-      }
-    }
-
-    // Compute stats
-    let allCoursesForStats = courses;
-    if (db) {
-      allCoursesForStats = await Course.find({}).lean();
-      if (!allCoursesForStats || allCoursesForStats.length === 0) {
-        allCoursesForStats = mockCourses.map((mc) => ({ ...mc, status: "published" }));
-      }
-    }
-
-    const stats = {
-      total: allCoursesForStats.length,
-      published: allCoursesForStats.filter((c) => c.status === "published").length,
-      draft: allCoursesForStats.filter((c) => c.status === "draft").length,
-      archived: allCoursesForStats.filter((c) => c.status === "archived").length,
-    };
-
-    return NextResponse.json({ courses, stats, source: db ? "database" : "offline-mock" });
+    return NextResponse.json({
+      courses,
+      stats,
+      source: db ? "database" : "offline-store",
+    });
   } catch (error) {
     console.error("GET /api/admin/courses error:", error);
-    return NextResponse.json({ error: "Failed to fetch admin courses" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch admin courses" },
+      { status: 500 }
+    );
   }
 }
 
@@ -106,6 +89,19 @@ export async function POST(req) {
       priceNGN: 0,
       estimatedHours: 2,
       estimatedDuration: "2 hours",
+      problemStatement: {
+        whatProblem: "Clearly define the real-world operational problem this project solves.",
+        whyImportant: "Explain why traditional or naive approaches fail in production.",
+        realWorldContext: "Describe the architectural scenario and organizational requirements.",
+        whatWillBuild: title.trim(),
+      },
+      architecture: {
+        diagramUrl: null,
+        dataFlow: "Ingress / Client -> Gateway -> Service -> Persistence Store",
+        components: [
+          { name: "Primary Gateway", role: "Ingress Controller", service: "Network Routing" },
+        ],
+      },
       prerequisites: [
         {
           name: "Local Development Terminal",
@@ -114,7 +110,11 @@ export async function POST(req) {
           isRequired: true,
         },
       ],
-      learningObjectives: ["Understand fundamental architecture principles.", "Deploy and verify resources."],
+      learningObjectives: [
+        "Understand fundamental architecture principles.",
+        "Deploy and verify resources in a live environment.",
+        "Document observations and auditable proof of execution.",
+      ],
       openingReflection: {
         question:
           "In your own words, what do you think we are going to build, and what do you hope to understand by the end of this project?",
@@ -157,7 +157,7 @@ export async function POST(req) {
               type: "code",
               data: {
                 language: "bash",
-                code: "aws sts get-caller-identity\n# Verify your Account ID and ARN",
+                code: "# Verify active authentication credentials\necho 'Checking CLI toolchain...'",
                 explanation: "Runs an authentication check to confirm active credentials.",
               },
             },
@@ -166,7 +166,7 @@ export async function POST(req) {
               type: "warning",
               data: {
                 title: "Least Privilege Notice",
-                message: "Ensure your IAM credentials have only the specific permissions needed for this lab.",
+                message: "Ensure your credentials have only the specific permissions needed for this lab.",
                 severity: "security",
               },
             },
@@ -188,18 +188,16 @@ export async function POST(req) {
     if (db) {
       createdCourse = await Course.create(newCourseData);
     } else {
-      // In offline mode, simulate creation with mock identifier
-      createdCourse = {
-        _id: `custom_${Date.now()}`,
-        ...newCourseData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      // In offline mode, persist immediately to the offline local store
+      createdCourse = saveOfflineCourse(newCourseData);
     }
 
     return NextResponse.json({ success: true, course: createdCourse }, { status: 201 });
   } catch (error) {
     console.error("POST /api/admin/courses error:", error);
-    return NextResponse.json({ error: error.message || "Failed to create course" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to create course" },
+      { status: 500 }
+    );
   }
 }
