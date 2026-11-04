@@ -39,39 +39,39 @@ export default function ShareButtons({ courseTitle, credentialId, shareUrl }) {
         variant="secondary"
         size="sm"
         onClick={handleCopyLink}
-        className="text-xs"
+        className="text-[13px] gap-1.5"
       >
         {copied ? (
           <>
-            <Check className="w-3.5 h-3.5 text-emerald-400 mr-1.5" />
+            <Check className="w-3.5 h-3.5 text-[var(--success)]" />
             <span>Link Copied</span>
           </>
         ) : (
           <>
-            <Share2 className="w-3.5 h-3.5 mr-1.5" />
+            <Share2 className="w-3.5 h-3.5 text-[var(--text-muted)]" />
             <span>Copy Dossier Link</span>
           </>
         )}
       </Button>
 
       <Button
-        variant="outline"
+        variant="secondary"
         size="sm"
         onClick={handleLinkedInShare}
-        className="text-xs text-blue-400 border-blue-500/40 hover:border-blue-400"
+        className="text-[13px] gap-1.5 text-blue-500 hover:text-blue-600"
       >
         <span>Share to LinkedIn</span>
-        <ExternalLink className="w-3 h-3 ml-1" />
+        <ExternalLink className="w-3.5 h-3.5 opacity-60" />
       </Button>
 
       <Button
-        variant="outline"
+        variant="secondary"
         size="sm"
         onClick={handleTwitterShare}
-        className="text-xs text-cyan-400 border-cyan-500/40 hover:border-cyan-400"
+        className="text-[13px] gap-1.5 text-[var(--text-primary)]"
       >
         <span>Post to X</span>
-        <ExternalLink className="w-3 h-3 ml-1" />
+        <ExternalLink className="w-3.5 h-3.5 opacity-60" />
       </Button>
     </div>
   );

@@ -1,34 +1,45 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import { ToastProvider } from "@/components/ui/Toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata = {
-  title: "Syntax_Ops — Proof of Work Cloud & DevOps Platform",
+  title: {
+    default: "Syntax_Ops — Proof of Work Engineering Platform",
+    template: "%s — Syntax_Ops",
+  },
   description:
-    "Interactive dual-pane engineering lab workspace for African cloud and software talent. Execute real workloads, upload terminal proofs, and generate verified PDF portfolios.",
+    "Learn cloud engineering, DevOps, and software development through practical projects, real-world challenges, and verifiable proof of work. Built for African engineers.",
+  keywords: ["cloud engineering", "DevOps", "AWS", "Kubernetes", "proof of work", "Africa tech"],
+  openGraph: {
+    title: "Syntax_Ops",
+    description: "Hands-on engineering education for the next generation of African cloud engineers.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} dark`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
-        <Navbar />
-        <main className="flex-1 flex flex-col">{children}</main>
-        <Footer />
+      <body className="min-h-screen bg-[var(--bg)] text-[var(--text-primary)] antialiased">
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

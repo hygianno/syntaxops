@@ -2,138 +2,270 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Terminal, Shield, BookOpen, User, CheckCircle2 } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Terminal, User, BookOpen, Menu, X, LayoutDashboard, Compass, Users, Award, Settings } from "lucide-react";
+import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+
+const NAV_LINKS = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Lab Catalog", href: "/courses" },
+  { label: "My Learning", href: "/my-learning" },
+  { label: "Portfolios", href: "/portfolio" },
+  { label: "Community", href: "/community" },
+];
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [profile, setProfile] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem("syntaxops:user_profile");
       if (stored) {
-        const parsed = JSON.parse(stored);
-        setProfile(parsed);
-        setName(parsed.fullName || "");
-        setEmail(parsed.email || "");
+        const p = JSON.parse(stored);
+        setProfile(p);
+        setName(p.fullName || "");
+        setEmail(p.email || "");
       }
-    } catch (e) {
-      console.error("Failed to load user profile:", e);
-    }
+    } catch {}
   }, []);
 
-  const handleSaveProfile = (e) => {
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  const handleSave = (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
-
-    const newProfile = {
-      fullName: name.trim(),
-      email: email.trim().toLowerCase(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    localStorage.setItem("syntaxops:user_profile", JSON.stringify(newProfile));
-    setProfile(newProfile);
+    const p = { fullName: name.trim(), email: email.trim().toLowerCase() };
+    localStorage.setItem("syntaxops:user_profile", JSON.stringify(p));
+    setProfile(p);
     setIsModalOpen(false);
   };
 
+  const initials = profile?.fullName
+    ? profile.fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : null;
+
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/75 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo & Brand Ethos */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              <Terminal className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+      <header
+        className={cn(
+          "fixed top-0 inset-x-0 z-40 h-14",
+          "flex items-center border-b",
+          "transition-all duration-200",
+          scrolled
+            ? "bg-[var(--bg)]/95 backdrop-blur-md border-[var(--border)]"
+            : "bg-[var(--bg)] border-[var(--border)]"
+        )}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full flex items-center justify-between gap-6">
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+            <div
+              className={cn(
+                "w-7 h-7 rounded-[6px] flex items-center justify-center",
+                "bg-[var(--accent)] group-hover:bg-[var(--accent-hover)]",
+                "transition-colors duration-150"
+              )}
+            >
+              <Terminal className="w-4 h-4 text-white stroke-[2.5]" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-mono font-bold text-base tracking-tight text-slate-100 flex items-center gap-1.5">
-                SYNTAX<span className="text-cyan-400">_OPS</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/60 text-cyan-300 font-sans font-semibold uppercase tracking-wider">
-                  PoW
-                </span>
-              </span>
-              <span className="text-[11px] text-slate-400 hidden sm:inline">
-                African Cloud & DevOps Engine
-              </span>
-            </div>
+            <span className="font-mono font-semibold text-[15px] text-[var(--text-primary)] tracking-tight">
+              syntax_ops
+            </span>
           </Link>
 
-          {/* Navigation Links */}
-          <nav className="flex items-center gap-6">
-            <Link
-              href="/courses"
-              className="text-sm font-medium text-slate-300 hover:text-cyan-400 transition-colors flex items-center gap-1.5"
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>Lab Catalog</span>
-            </Link>
-
-            {/* Profile Action Pill */}
-            {profile ? (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-xs text-slate-200 transition-all cursor-pointer"
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-1">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "px-3 py-1.5 rounded-[6px] text-[13px] font-medium",
+                  "transition-colors duration-150",
+                  pathname === link.href
+                    ? "bg-[var(--surface-2)] text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
+                )}
               >
-                <div className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-[10px]">
-                  {profile.fullName.charAt(0).toUpperCase()}
-                </div>
-                <span className="max-w-[120px] truncate">{profile.fullName}</span>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 text-xs font-medium text-cyan-300 transition-colors cursor-pointer"
-              >
-                <User className="w-3.5 h-3.5" />
-                <span>Set Engineer Profile</span>
-              </button>
-            )}
+                {link.label}
+              </Link>
+            ))}
           </nav>
+
+          {/* Right: Profile + CTA */}
+          <div className="hidden md:flex items-center gap-2">
+            {profile ? (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/settings"
+                  className="p-1.5 rounded-[6px] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+                  title="Settings"
+                >
+                  <Settings className="w-4 h-4" />
+                </Link>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className={cn(
+                    "flex items-center gap-2 px-2.5 py-1.5 rounded-[8px]",
+                    "border border-[var(--border)]",
+                    "bg-[var(--surface)] hover:bg-[var(--surface-2)]",
+                    "text-[13px] text-[var(--text-primary)] font-medium",
+                    "transition-colors duration-150 cursor-pointer"
+                  )}
+                >
+                  <div className="w-6 h-6 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-[11px] font-bold shrink-0">
+                    {initials}
+                  </div>
+                  <span className="max-w-[120px] truncate">{profile.fullName}</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(true)}>
+                  Sign in
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  Get started
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden p-2 rounded-[6px] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+            onClick={() => setIsMobileMenuOpen((v) => !v)}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </header>
 
-      {/* Guest Profile Modal */}
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-30 pt-14 md:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setIsMobileMenuOpen(false)} />
+          <nav className="relative bg-[var(--surface)] border-b border-[var(--border)] px-4 py-4 space-y-1">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="block px-3 py-2.5 rounded-[6px] text-[14px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              href="/settings"
+              className="block px-3 py-2.5 rounded-[6px] text-[14px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+            >
+              Settings
+            </Link>
+            <div className="pt-3 border-t border-[var(--border)] mt-3 flex flex-col gap-2">
+              {profile ? (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-[6px] text-[14px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+                >
+                  <div className="w-6 h-6 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-[11px] font-bold">
+                    {initials}
+                  </div>
+                  {profile.fullName}
+                </button>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    className="w-full justify-center"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    Sign in
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="w-full justify-center"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    Get started free
+                  </Button>
+                </>
+              )}
+            </div>
+          </nav>
+        </div>
+      )}
+
+      {/* Profile Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Engineer Identity & Dossier Binding"
-        description="Your name and email will be bound to your verified project completion dossiers and cryptographic Proof of Work certificates."
+        title="Your engineer profile"
+        description="Your name and email are stored locally and appear on your verified project dossiers and certificates."
+        size="sm"
       >
-        <form onSubmit={handleSaveProfile} className="space-y-4">
+        <form onSubmit={handleSave} className="space-y-4 mt-2">
           <Input
-            label="Full Legal / Engineering Name"
-            placeholder="e.g. Folarin Favour Olaoluwapo"
+            label="Full name"
+            placeholder="Folarin Favour Olaoluwapo"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            helperText="Appears on official verified completion certificates"
+            helperText="Printed on completion certificates"
           />
           <Input
-            label="Email Address"
+            label="Email address"
             type="email"
-            placeholder="e.g. folarin@example.com"
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            helperText="Used for enrollment records and portfolio verification links"
+            helperText="Used for verification hash generation"
           />
-          <div className="pt-2 flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setIsModalOpen(false)}
-            >
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" size="md" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary">
-              Save Engineer Identity
+            <Button type="submit" variant="primary" size="md">
+              Save profile
             </Button>
           </div>
         </form>

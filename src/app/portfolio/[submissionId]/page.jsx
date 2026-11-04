@@ -9,7 +9,13 @@ import {
   ArrowLeft,
   FileText,
   CheckCircle,
+  ExternalLink,
+  Layers,
+  Clock,
+  Terminal,
 } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import CertificateBadge from "@/components/portfolio/CertificateBadge";
 import ShareButtons from "@/components/portfolio/ShareButtons";
 import { formatCredentialId } from "@/lib/hmac";
@@ -20,7 +26,7 @@ const PDFExportButton = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="px-4 py-2 text-xs rounded-lg bg-slate-800 text-slate-400 animate-pulse">
+      <div className="px-4 py-2 text-[13px] rounded-[6px] bg-[var(--surface-2)] text-[var(--text-muted)] animate-pulse">
         Initializing Vector PDF Engine...
       </div>
     ),
@@ -38,10 +44,10 @@ export default function PortfolioReportPage({ params }) {
     // Confetti celebration burst on load
     try {
       confetti({
-        particleCount: 80,
+        particleCount: 90,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ["#06b6d4", "#3b82f6", "#10b981"],
+        colors: ["#3867E8", "#16845B", "#F5B731"],
       });
     } catch (e) {
       // Ignored in non-interactive runtimes
@@ -83,8 +89,8 @@ export default function PortfolioReportPage({ params }) {
 
   if (loading || !submission) {
     return (
-      <div className="flex-1 flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-400" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--border)] border-t-[var(--accent)]" />
       </div>
     );
   }
@@ -92,106 +98,121 @@ export default function PortfolioReportPage({ params }) {
   const credentialId = formatCredentialId(submission.verificationHash);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
-      {/* Back to Catalog */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/courses"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Labs Catalog</span>
-        </Link>
-        <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
-          <CheckCircle className="w-3.5 h-3.5" /> All Milestones Audited
-        </span>
-      </div>
+    <div className="flex flex-col min-h-screen bg-[var(--bg)]">
+      <Navbar />
 
-      {/* Verified Credential Badge Hero */}
-      <CertificateBadge
-        verificationHash={submission.verificationHash}
-        studentName={submission.userFullName}
-        courseTitle={submission.courseTitle}
-      />
-
-      {/* Action Bar: PDF Vector Download + Social Share */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div>
-          <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-cyan-400" />
-            Client-Side Compiled Project Dossier
-          </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Vector PDF containing your reflections, timestamps, and terminal proofs.
-          </p>
-        </div>
-
-        <div className="shrink-0">
-          <PDFExportButton
-            submission={submission}
-            credentialId={credentialId}
-          />
-        </div>
-      </div>
-
-      {/* Social Verification Sharing */}
-      <div className="text-center space-y-3">
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Broadcast Proof of Work
-        </div>
-        <ShareButtons
-          courseTitle={submission.courseTitle}
-          credentialId={credentialId}
-        />
-      </div>
-
-      {/* Submission Evidence Audit Details */}
-      <div className="space-y-4 pt-6 border-t border-slate-800/80">
-        <h3 className="text-base font-bold text-slate-100">
-          Audited Milestone Submissions
-        </h3>
-
-        <div className="space-y-4">
-          {submission.stepResponses?.map((step) => (
-            <div
-              key={step.stepNumber}
-              className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3"
+      <main className="flex-1 pt-20 pb-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-8">
+          {/* Back to Catalog & Status Bar */}
+          <div className="flex items-center justify-between">
+            <Link
+              href="/courses"
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
             >
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-200">
-                  Milestone {step.stepNumber}: {step.title || `Step ${step.stepNumber}`}
-                </span>
-                <span className="text-[11px] font-mono text-emerald-400 px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/60">
-                  PASSED
-                </span>
-              </div>
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Lab Catalog</span>
+            </Link>
+            <span className="text-[12px] font-mono font-medium text-[var(--success)] flex items-center gap-1.5 bg-[var(--success-subtle)] px-2.5 py-1 rounded-full border border-[var(--success-border)]">
+              <CheckCircle className="w-3.5 h-3.5" />
+              All Milestones Audited & Verified
+            </span>
+          </div>
 
-              <div>
-                <div className="text-[10px] uppercase font-mono text-cyan-400 mb-1">
-                  Cognitive Discovery Analysis:
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-lg border border-slate-850">
-                  {step.reflectionText}
-                </p>
-              </div>
+          {/* Verified Credential Badge Hero */}
+          <CertificateBadge
+            verificationHash={submission.verificationHash}
+            studentName={submission.userFullName}
+            courseTitle={submission.courseTitle}
+          />
 
-              {step.screenshotUrl && (
-                <div>
-                  <div className="text-[10px] uppercase font-mono text-slate-400 mb-1">
-                    Terminal Execution Proof:
-                  </div>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={step.screenshotUrl}
-                    alt={`Milestone ${step.stepNumber} proof`}
-                    className="max-h-64 rounded-lg border border-slate-800 bg-black/40 object-contain"
-                  />
-                </div>
-              )}
+          {/* Action Bar: PDF Vector Download */}
+          <div className="p-6 rounded-[var(--radius-lg)] bg-[var(--surface)] border border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-6 shadow-[var(--shadow-sm)]">
+            <div>
+              <h2 className="text-[15px] font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[var(--accent)]" />
+                Verified Project Completion Dossier
+              </h2>
+              <p className="text-[13px] text-[var(--text-secondary)] mt-0.5 leading-relaxed">
+                Client-compiled vector PDF containing your architectural reflections,
+                verified execution timestamps, and raw evidentiary proofs.
+              </p>
             </div>
-          ))}
+
+            <div className="shrink-0">
+              <PDFExportButton
+                submission={submission}
+                credentialId={credentialId}
+              />
+            </div>
+          </div>
+
+          {/* Social Verification Sharing */}
+          <div className="p-6 rounded-[var(--radius-lg)] bg-[var(--surface)] border border-[var(--border)] text-center space-y-3">
+            <div className="text-[12px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+              Share Your Proof of Work With Employers
+            </div>
+            <ShareButtons
+              courseTitle={submission.courseTitle}
+              credentialId={credentialId}
+            />
+          </div>
+
+          {/* Submission Evidence Audit Details */}
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[18px] font-bold text-[var(--text-primary)] tracking-tight">
+                Audited Milestone Submissions
+              </h2>
+              <span className="text-[12px] text-[var(--text-muted)]">
+                {submission.stepResponses?.length || 0} milestones submitted
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {submission.stepResponses?.map((step) => (
+                <div
+                  key={step.stepNumber}
+                  className="p-5 rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[14px] font-semibold text-[var(--text-primary)]">
+                      Milestone {step.stepNumber}: {step.title || `Step ${step.stepNumber}`}
+                    </span>
+                    <span className="text-[11px] font-mono font-medium text-[var(--success)] px-2 py-0.5 rounded-full bg-[var(--success-subtle)] border border-[var(--success-border)]">
+                      VERIFIED PASSED
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+                      Cognitive Discovery Analysis
+                    </div>
+                    <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed bg-[var(--surface-2)] p-3.5 rounded-[var(--radius-sm)] border border-[var(--border)]">
+                      {step.reflectionText}
+                    </p>
+                  </div>
+
+                  {step.screenshotUrl && (
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+                        Terminal / Cloud Console Proof
+                      </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={step.screenshotUrl}
+                        alt={`Milestone ${step.stepNumber} proof`}
+                        className="max-h-72 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-3)] object-contain w-full"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }

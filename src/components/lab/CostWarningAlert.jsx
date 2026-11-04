@@ -1,5 +1,6 @@
 import React from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Flame } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function CostWarningAlert({ message }) {
   if (!message) return null;
@@ -10,22 +11,23 @@ export default function CostWarningAlert({ message }) {
 
   return (
     <div
-      className={`flex items-start gap-3 p-3.5 rounded-lg border my-4 text-xs leading-relaxed ${
+      role="alert"
+      className={cn(
+        "flex gap-3 p-4 rounded-[var(--radius-sm)] border my-4",
         isCritical
-          ? "bg-rose-950/40 border-rose-800/80 text-rose-200"
-          : "bg-amber-950/40 border-amber-800/80 text-amber-200"
-      }`}
+          ? "bg-[var(--error-subtle)] border-[var(--error-border)] text-[var(--error)]"
+          : "bg-[var(--warning-subtle)] border-[var(--warning-border)] text-[var(--warning)]"
+      )}
     >
-      <AlertTriangle
-        className={`w-4 h-4 shrink-0 mt-0.5 ${
-          isCritical ? "text-rose-400" : "text-amber-400"
-        }`}
-      />
-      <div>
-        <span className="font-semibold uppercase tracking-wider block mb-0.5 text-[10px]">
-          {isCritical ? "Cost & Blast Radius Hazard" : "Cloud Cost Advisory"}
+      {isCritical
+        ? <Flame className="w-4 h-4 shrink-0 mt-0.5" />
+        : <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+      }
+      <div className="text-[13px] leading-relaxed">
+        <span className="font-semibold block mb-0.5 text-[12px] uppercase tracking-wide">
+          {isCritical ? "Cost & Blast Radius Warning" : "Cloud Cost Notice"}
         </span>
-        <p>{message}</p>
+        {message}
       </div>
     </div>
   );

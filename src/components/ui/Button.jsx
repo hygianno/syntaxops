@@ -1,72 +1,108 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-const variantStyles = {
-  primary:
-    "bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold shadow-lg shadow-cyan-500/20 active:scale-[0.98]",
-  secondary:
-    "bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 active:scale-[0.98]",
-  outline:
-    "bg-transparent hover:bg-slate-800/80 text-cyan-400 border border-cyan-500/40 hover:border-cyan-400 active:scale-[0.98]",
-  ghost:
-    "bg-transparent hover:bg-slate-800 text-slate-300 hover:text-white",
-  danger:
-    "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30",
+const variants = {
+  primary: [
+    "bg-[var(--accent)] text-white",
+    "hover:bg-[var(--accent-hover)]",
+    "focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2",
+    "disabled:opacity-50 disabled:cursor-not-allowed",
+    "shadow-sm",
+  ],
+  secondary: [
+    "bg-[var(--surface-2)] text-[var(--text-primary)]",
+    "border border-[var(--border)]",
+    "hover:bg-[var(--surface-3)] hover:border-[var(--border-strong)]",
+    "focus-visible:ring-2 focus-visible:ring-[var(--border-strong)] focus-visible:ring-offset-2",
+    "disabled:opacity-50 disabled:cursor-not-allowed",
+  ],
+  ghost: [
+    "bg-transparent text-[var(--text-secondary)]",
+    "hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]",
+    "focus-visible:ring-2 focus-visible:ring-[var(--border-strong)] focus-visible:ring-offset-2",
+    "disabled:opacity-50 disabled:cursor-not-allowed",
+  ],
+  destructive: [
+    "bg-[var(--error-subtle)] text-[var(--error)]",
+    "border border-[var(--error-border)]",
+    "hover:bg-[var(--error)] hover:text-white",
+    "focus-visible:ring-2 focus-visible:ring-[var(--error)] focus-visible:ring-offset-2",
+    "disabled:opacity-50 disabled:cursor-not-allowed",
+  ],
+  link: [
+    "bg-transparent text-[var(--accent)] underline-offset-4",
+    "hover:underline",
+    "disabled:opacity-50 disabled:cursor-not-allowed",
+    "p-0 h-auto",
+  ],
 };
 
-const sizeStyles = {
-  sm: "px-3 py-1.5 text-xs rounded-md gap-1.5",
-  md: "px-4 py-2 text-sm rounded-lg gap-2",
-  lg: "px-6 py-3 text-base rounded-lg gap-2.5",
+const sizes = {
+  sm:   "h-8  px-3   text-[13px] gap-1.5 rounded-[6px]",
+  md:   "h-9  px-4   text-[14px] gap-2   rounded-[6px]",
+  lg:   "h-10 px-5   text-[15px] gap-2   rounded-[8px]",
+  xl:   "h-12 px-6   text-[16px] gap-2.5 rounded-[10px]",
+  icon: "h-9  w-9    text-[14px]         rounded-[6px] p-0 justify-center",
 };
 
 export default function Button({
-  children,
   variant = "primary",
   size = "md",
   className,
-  disabled = false,
+  children,
   isLoading = false,
+  disabled,
   type = "button",
-  onClick,
   ...props
 }) {
   return (
     <button
       type={type}
       disabled={disabled || isLoading}
-      onClick={onClick}
       className={cn(
-        "inline-flex items-center justify-center font-medium transition-all duration-150 select-none disabled:opacity-50 disabled:pointer-events-none cursor-pointer",
-        variantStyles[variant] || variantStyles.primary,
-        sizeStyles[size] || sizeStyles.md,
+        "inline-flex items-center justify-center font-medium",
+        "transition-all duration-150 ease-in-out",
+        "select-none cursor-pointer whitespace-nowrap",
+        "active:scale-[0.98]",
+        variants[variant],
+        sizes[size],
+        variant !== "link" && size !== "icon" && "leading-none",
         className
       )}
       {...props}
     >
-      {isLoading && (
-        <svg
-          className="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          />
-        </svg>
+      {isLoading ? (
+        <>
+          <Spinner className="w-4 h-4 shrink-0" />
+          {children}
+        </>
+      ) : (
+        children
       )}
-      {children}
     </button>
+  );
+}
+
+function Spinner({ className }) {
+  return (
+    <svg
+      className={cn("animate-spin text-current", className)}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <circle
+        className="opacity-25"
+        cx="12" cy="12" r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
   );
 }

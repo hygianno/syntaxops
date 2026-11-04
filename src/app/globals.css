@@ -1,54 +1,206 @@
 @import "tailwindcss";
 
+/* ============================================================
+   SYNTAX_OPS DESIGN SYSTEM — TOKEN FOUNDATION
+   Tailwind CSS v4 @theme + CSS Custom Properties
+   Light-first, dark via .dark class (class strategy)
+   ============================================================ */
+
 @theme {
-  --color-brand-cyan: #06b6d4;
-  --color-brand-blue: #3b82f6;
-  --color-brand-emerald: #10b981;
-  --color-brand-amber: #f59e0b;
-  --color-brand-rose: #f43f5e;
+  /* Type scale */
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --color-surface-bg: #090d16;
-  --color-surface-card: #0f172a;
-  --color-surface-panel: #131c31;
-  --color-surface-border: #1e293b;
-  --color-surface-highlight: #1e2c4c;
+  /* Brand blue scale */
+  --color-brand-50:  #EEF2FD;
+  --color-brand-100: #D7E2FB;
+  --color-brand-200: #B0C5F7;
+  --color-brand-300: #88A8F3;
+  --color-brand-400: #618BEF;
+  --color-brand-500: #3867E8;
+  --color-brand-600: #2D57D1;
+  --color-brand-700: #2244AB;
+  --color-brand-800: #1A3585;
+  --color-brand-900: #12245E;
 
-  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Semantic colors */
+  --color-success: #16845B;
+  --color-success-bg: #ECFBF4;
+  --color-warning: #D99526;
+  --color-warning-bg: #FEF9EC;
+  --color-error: #D84C4C;
+  --color-error-bg: #FEF2F2;
 }
 
+/* ============================================================
+   LIGHT THEME TOKENS (default)
+   ============================================================ */
 :root {
-  --bg-primary: #090d16;
-  --bg-card: #0f172a;
-  --border-color: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --bg:             #F8F9FB;
+  --surface:        #FFFFFF;
+  --surface-2:      #F2F4F8;
+  --surface-3:      #E9EDF5;
+  --border:         #E4E8EF;
+  --border-strong:  #CBD2DC;
+  --text-primary:   #171A21;
+  --text-secondary: #566069;
+  --text-muted:     #9BA5B4;
+
+  --accent:         #3867E8;
+  --accent-hover:   #2D57D1;
+  --accent-subtle:  #EEF2FD;
+  --accent-text:    #2D57D1;
+
+  --success:        #16845B;
+  --success-subtle: #ECFBF4;
+  --success-border: #A7F3D0;
+  --warning:        #D99526;
+  --warning-subtle: #FEF9EC;
+  --warning-border: #FDE68A;
+  --error:          #D84C4C;
+  --error-subtle:   #FEF2F2;
+  --error-border:   #FECACA;
+
+  --shadow-sm:  0 1px 2px rgba(23,26,33,0.06), 0 1px 3px rgba(23,26,33,0.04);
+  --shadow-md:  0 4px 12px rgba(23,26,33,0.08), 0 2px 4px rgba(23,26,33,0.04);
+  --shadow-lg:  0 10px 32px rgba(23,26,33,0.10), 0 4px 8px rgba(23,26,33,0.05);
+
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+}
+
+/* ============================================================
+   DARK THEME TOKENS
+   ============================================================ */
+.dark {
+  --bg:             #111318;
+  --surface:        #191D24;
+  --surface-2:      #202630;
+  --surface-3:      #272E3A;
+  --border:         #2A303B;
+  --border-strong:  #374151;
+  --text-primary:   #F1F3F7;
+  --text-secondary: #9BA5B4;
+  --text-muted:     #6B7585;
+
+  --accent:         #4D7CF6;
+  --accent-hover:   #6B94F8;
+  --accent-subtle:  #1A2340;
+  --accent-text:    #7AAAFF;
+
+  --success:        #22C87A;
+  --success-subtle: #0D2B1F;
+  --success-border: #166534;
+  --warning:        #F5B731;
+  --warning-subtle: #2B2007;
+  --warning-border: #854D0E;
+  --error:          #F87171;
+  --error-subtle:   #2C1313;
+  --error-border:   #991B1B;
+
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg:  0 10px 32px rgba(0,0,0,0.5);
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background-color: var(--bg-primary);
+  background-color: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom styled scrollbars for code and terminal panes */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Focus ring — always visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-::-webkit-scrollbar-track {
-  background: #090d16;
+/* Text selection */
+::selection {
+  background-color: var(--accent-subtle);
+  color: var(--accent-text);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ============================================================
+   TYPOGRAPHY UTILITY CLASSES
+   ============================================================ */
+.text-display    { font-size: 34px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
+.text-heading-1  { font-size: 28px; font-weight: 700; line-height: 1.2;  letter-spacing: -0.015em; }
+.text-heading-2  { font-size: 24px; font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; }
+.text-heading-3  { font-size: 20px; font-weight: 600; line-height: 1.3;  letter-spacing: -0.01em; }
+.text-heading-4  { font-size: 17px; font-weight: 600; line-height: 1.35; }
+.text-body-lg    { font-size: 16px; line-height: 1.65; }
+.text-body       { font-size: 15px; line-height: 1.6; }
+.text-body-sm    { font-size: 14px; line-height: 1.55; }
+.text-caption    { font-size: 13px; line-height: 1.5; }
+.text-label      { font-size: 12px; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; }
+.text-code       { font-family: var(--font-mono); font-size: 13px; }
+
+/* ============================================================
+   INLINE CODE (non-block) 
+   ============================================================ */
+code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--accent-text);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+/* ============================================================
+   PROSE STYLES (for lab instruction markdown)
+   ============================================================ */
+.prose {
+  color: var(--text-primary);
+  max-width: 68ch;
+}
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.75em;
+  margin-bottom: 0.5em;
+}
+.prose h3 { font-size: 16px; letter-spacing: -0.01em; margin-top: 1.5em; }
+.prose p { margin-bottom: 1em; color: var(--text-secondary); font-size: 14px; line-height: 1.65; }
+.prose ul, .prose ol { padding-left: 1.25em; margin-bottom: 1em; }
+.prose li { font-size: 14px; color: var(--text-secondary); margin-bottom: 0.4em; line-height: 1.6; }
+.prose strong { color: var(--text-primary); font-weight: 600; }
+.prose a { color: var(--accent); text-decoration: underline; text-decoration-color: transparent; }
+.prose a:hover { text-decoration-color: var(--accent); }
+.prose pre { margin: 1em 0; }
+.prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1em;
+  margin-left: 0;
+  color: var(--text-secondary);
+  font-style: italic;
 }

@@ -1,85 +1,94 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { CheckCircle, XCircle, HelpCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function SanityQuiz({ quiz, onPass, isPassed }) {
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [hasAttempted, setHasAttempted] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [attempted, setAttempted] = useState(false);
 
   if (!quiz) return null;
 
-  const handleSelect = (index) => {
-    setSelectedOption(index);
-    setHasAttempted(true);
-    if (index === quiz.answerIndex) {
-      onPass(true);
-    } else {
-      onPass(false);
-    }
+  const isCorrect = selected === quiz.answerIndex;
+
+  const handleSelect = (idx) => {
+    if (isPassed && isCorrect) return; // lock after pass
+    setSelected(idx);
+    setAttempted(true);
+    onPass(idx === quiz.answerIndex);
   };
 
-  const isCorrect = selectedOption === quiz.answerIndex;
-
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-4 space-y-3">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-cyan-400">
-        <HelpCircle className="w-4 h-4" />
-        <span>Conceptual Sanity Check</span>
+    <div className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-2)]">
+        <HelpCircle className="w-4 h-4 text-[var(--accent)] shrink-0" />
+        <span className="text-[12px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+          Knowledge check
+        </span>
+        {isPassed && (
+          <span className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-[var(--success)]">
+            <CheckCircle className="w-3.5 h-3.5" /> Verified
+          </span>
+        )}
       </div>
 
-      <p className="text-xs font-medium text-slate-200 leading-relaxed">
-        {quiz.question}
-      </p>
+      <div className="p-4 space-y-3">
+        <p className="text-[13px] font-medium text-[var(--text-primary)] leading-snug">
+          {quiz.question}
+        </p>
 
-      <div className="space-y-2 pt-1">
-        {quiz.options.map((option, idx) => {
-          let stateStyle = "border-slate-800 bg-slate-950/60 hover:border-slate-700 text-slate-300";
+        <div className="space-y-2">
+          {quiz.options.map((opt, idx) => {
+            const isThis = selected === idx;
+            const isAnswer = idx === quiz.answerIndex;
 
-          if (hasAttempted && selectedOption === idx) {
-            stateStyle = isCorrect
-              ? "border-emerald-500 bg-emerald-950/40 text-emerald-200"
-              : "border-rose-500 bg-rose-950/40 text-rose-200";
-          } else if (isPassed && idx === quiz.answerIndex) {
-            stateStyle = "border-emerald-500/60 bg-emerald-950/30 text-emerald-200";
-          }
+            let optStyle = "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]";
 
-          return (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleSelect(idx)}
-              className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-all flex items-start gap-2.5 cursor-pointer ${stateStyle}`}
-            >
-              <span className="font-mono text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 shrink-0 mt-0.5">
-                {String.fromCharCode(65 + idx)}
-              </span>
-              <span className="flex-1">{option}</span>
-              {hasAttempted && selectedOption === idx && (
-                isCorrect ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                ) : (
-                  <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                )
-              )}
-            </button>
-          );
-        })}
-      </div>
+            if (attempted) {
+              if (isThis && isCorrect)  optStyle = "border-[var(--success-border)] bg-[var(--success-subtle)] text-[var(--success)]";
+              else if (isThis && !isCorrect) optStyle = "border-[var(--error-border)] bg-[var(--error-subtle)] text-[var(--error)]";
+              else if (!isThis && isPassed && isAnswer) optStyle = "border-[var(--success-border)] bg-[var(--success-subtle)] text-[var(--success)] opacity-60";
+            }
 
-      {hasAttempted && (
-        <div className="text-[11px] pt-1">
-          {isCorrect ? (
-            <p className="text-emerald-400 font-medium flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Sanity check verified. Milestone requirement unlocked.
-            </p>
-          ) : (
-            <p className="text-rose-400 font-medium">
-              Incorrect analysis. Review the architectural documentation and retry.
-            </p>
-          )}
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSelect(idx)}
+                className={cn(
+                  "w-full text-left flex items-start gap-3 px-3 py-2.5 rounded-[6px] border",
+                  "text-[13px] transition-all duration-150 cursor-pointer",
+                  optStyle
+                )}
+              >
+                <span className="shrink-0 w-5 h-5 rounded-full border-2 border-current flex items-center justify-center text-[10px] font-bold mt-0.5">
+                  {String.fromCharCode(65 + idx)}
+                </span>
+                <span className="flex-1 leading-snug">{opt}</span>
+                {attempted && isThis && (
+                  isCorrect
+                    ? <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    : <XCircle    className="w-4 h-4 shrink-0 mt-0.5" />
+                )}
+              </button>
+            );
+          })}
         </div>
-      )}
+
+        {/* Feedback */}
+        {attempted && (
+          <p className={cn(
+            "text-[12px] font-medium pt-1",
+            isCorrect ? "text-[var(--success)]" : "text-[var(--error)]"
+          )}>
+            {isCorrect
+              ? "Correct — knowledge check passed. Milestone unlocked."
+              : "Incorrect. Review the documentation above and try again."}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

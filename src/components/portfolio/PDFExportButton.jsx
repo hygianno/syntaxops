@@ -40,7 +40,7 @@ export default function PDFExportButton({ submission, credentialId }) {
       size="md"
       isLoading={isCompiling}
       onClick={handleDownload}
-      className="shadow-cyan-500/20"
+      className="shadow-sm"
     >
       <Download className="w-4 h-4 mr-2" />
       <span>{isCompiling ? "Compiling Vector PDF..." : "Download Verified Dossier"}</span>

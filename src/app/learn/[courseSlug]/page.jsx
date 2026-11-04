@@ -4,12 +4,14 @@ import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Terminal,
-  Shield,
   ArrowLeft,
-  Layers,
-  Sparkles,
   CheckCircle,
+  HelpCircle,
+  FileCheck2,
+  Terminal,
+  ExternalLink,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { mockCourses } from "@/data/mockCourses";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -18,11 +20,13 @@ import StudentNotebookPane from "@/components/lab/StudentNotebookPane";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 
 export default function LearnWorkspacePage({ params }) {
   const resolvedParams = use(params);
   const courseSlug = resolvedParams.courseSlug;
   const router = useRouter();
+  const addToast = useToast();
 
   // Find course definition (fallback to first course if slug not matched)
   const course =
@@ -31,6 +35,9 @@ export default function LearnWorkspacePage({ params }) {
   const totalSteps = course.steps.length;
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const currentStep = course.steps[currentStepIndex];
+
+  // Mobile / responsive view toggle: 'instructions' or 'notebook'
+  const [mobileTab, setMobileTab] = useState("instructions");
 
   // User Profile
   const [userProfile, setUserProfile] = useLocalStorage(
@@ -86,17 +93,22 @@ export default function LearnWorkspacePage({ params }) {
     };
     setUserProfile(newProfile);
     setIsProfileModalOpen(false);
+    if (addToast) {
+      addToast({ message: "Engineer profile bound successfully.", type: "success" });
+    }
   };
 
   const handleNextStep = () => {
     if (currentStepIndex < totalSteps - 1) {
       setCurrentStepIndex((prev) => prev + 1);
+      setMobileTab("instructions");
     }
   };
 
   const handlePrevStep = () => {
     if (currentStepIndex > 0) {
       setCurrentStepIndex((prev) => prev - 1);
+      setMobileTab("instructions");
     }
   };
 
@@ -150,6 +162,9 @@ export default function LearnWorkspacePage({ params }) {
           JSON.stringify(portfolioPayload)
         );
 
+        if (addToast) {
+          addToast({ message: "Lab finalized! Compiling verification dossier...", type: "success" });
+        }
         router.push(`/portfolio/${data.submissionId}`);
       } else {
         alert("Lab finalization failed: " + (data.error || "Unknown error"));
@@ -162,110 +177,186 @@ export default function LearnWorkspacePage({ params }) {
     }
   };
 
+  // Progress metrics
+  const completedStepsCount = course.steps.filter((s) => {
+    const sData = labState[s.stepNumber];
+    const words = sData?.reflectionText ? sData.reflectionText.trim().split(/\s+/).filter(Boolean).length : 0;
+    return sData?.quizPassed && words >= 20;
+  }).length;
+  const progressPercent = Math.round((completedStepsCount / totalSteps) * 100);
+
   return (
-    <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Workspace Top Toolbar */}
-      <div className="h-12 bg-slate-950 border-b border-slate-800/80 px-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col h-screen overflow-hidden bg-[var(--bg)] text-[var(--text-primary)]">
+      {/* ── Top Workspace Bar ───────────────────────────────── */}
+      <header className="h-14 shrink-0 border-b border-[var(--border)] bg-[var(--surface)] px-4 sm:px-6 flex items-center justify-between gap-4 z-20">
+        {/* Left: Back + Project Info */}
+        <div className="flex items-center gap-3 min-w-0">
           <Link
             href="/courses"
-            className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-100 transition-colors"
+            className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors shrink-0"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Catalog</span>
           </Link>
-          <div className="h-4 w-px bg-slate-800" />
-          <span className="text-xs font-semibold text-slate-200 truncate max-w-xs sm:max-w-md">
-            {course.title}
-          </span>
+          <div className="h-4 w-px bg-[var(--border)] shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-[14px] font-semibold text-[var(--text-primary)] truncate">
+              {course.title}
+            </h1>
+            <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
+              <span>{course.track}</span>
+              <span>•</span>
+              <span className="text-[var(--accent-text)] font-medium">
+                {progressPercent}% Complete ({completedStepsCount}/{totalSteps} milestones)
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Milestone Steps Stepper */}
-        <div className="flex items-center gap-1.5">
-          {course.steps.map((s, idx) => {
-            const isCompleted =
-              idx < currentStepIndex ||
-              (labState[s.stepNumber]?.quizPassed &&
-                labState[s.stepNumber]?.reflectionText?.trim().split(/\s+/).filter(Boolean).length >= 20);
+        {/* Center / Right: Stepper Navigation */}
+        <div className="flex items-center gap-2">
+          {/* Step Pill Navigation */}
+          <nav className="hidden md:flex items-center gap-1 bg-[var(--surface-2)] p-1 rounded-[8px] border border-[var(--border)]" aria-label="Milestone Progress">
+            {course.steps.map((s, idx) => {
+              const sData = labState[s.stepNumber];
+              const words = sData?.reflectionText ? sData.reflectionText.trim().split(/\s+/).filter(Boolean).length : 0;
+              const isStepDone = sData?.quizPassed && words >= 20;
+              const isActive = currentStepIndex === idx;
 
-            return (
-              <button
-                key={s.stepNumber}
-                onClick={() => setCurrentStepIndex(idx)}
-                className={`w-7 h-7 rounded-md text-xs font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${
-                  currentStepIndex === idx
-                    ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30"
-                    : isCompleted
-                    ? "bg-slate-800 text-emerald-400 border border-emerald-500/40"
-                    : "bg-slate-900 text-slate-400 border border-slate-800 hover:border-slate-700"
-                }`}
-              >
-                {isCompleted && currentStepIndex !== idx ? (
-                  <CheckCircle className="w-3.5 h-3.5" />
-                ) : (
-                  idx + 1
-                )}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={s.stepNumber}
+                  onClick={() => setCurrentStepIndex(idx)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-[var(--accent)] text-white shadow-sm font-semibold"
+                      : isStepDone
+                      ? "text-[var(--success)] hover:bg-[var(--surface-3)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-3)]"
+                  }`}
+                  aria-current={isActive ? "step" : undefined}
+                >
+                  {isStepDone ? (
+                    <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                  ) : (
+                    <span className="w-4 h-4 rounded-full border border-current text-[10px] flex items-center justify-center font-bold">
+                      {idx + 1}
+                    </span>
+                  )}
+                  <span className="truncate max-w-[100px] hidden lg:inline">
+                    {s.title}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* User profile identifier / quick switch */}
+          {userProfile && (
+            <button
+              onClick={() => setIsProfileModalOpen(true)}
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[12px] text-[var(--text-secondary)] font-medium transition-colors"
+              title="Click to edit profile"
+            >
+              <span className="w-2 h-2 rounded-full bg-[var(--success)]" />
+              <span className="max-w-[100px] truncate">{userProfile.fullName}</span>
+            </button>
+          )}
         </div>
+      </header>
+
+      {/* ── Mobile Tab Switcher (Visible on < lg screens) ────── */}
+      <div className="lg:hidden shrink-0 border-b border-[var(--border)] bg-[var(--surface-2)] flex">
+        <button
+          onClick={() => setMobileTab("instructions")}
+          className={`flex-1 py-2.5 text-[13px] font-medium border-b-2 text-center transition-colors ${
+            mobileTab === "instructions"
+              ? "border-[var(--accent)] text-[var(--accent-text)] bg-[var(--surface)] font-semibold"
+              : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          }`}
+        >
+          1. Instructions
+        </button>
+        <button
+          onClick={() => setMobileTab("notebook")}
+          className={`flex-1 py-2.5 text-[13px] font-medium border-b-2 text-center transition-colors ${
+            mobileTab === "notebook"
+              ? "border-[var(--accent)] text-[var(--accent-text)] bg-[var(--surface)] font-semibold"
+              : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          }`}
+        >
+          2. Learner Notebook
+        </button>
       </div>
 
-      {/* Dual-Pane Workspace */}
+      {/* ── Main Workspace Body (Dual-Pane) ─────────────────── */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
-        {/* Left Pane: Architecture Specs & Step Instructions */}
-        <StepInstructionPane
-          step={currentStep}
-          currentStepIndex={currentStepIndex}
-          totalSteps={totalSteps}
-        />
+        {/* Left Pane: Instructions */}
+        <div className={`h-full overflow-hidden ${mobileTab === "instructions" ? "block" : "hidden lg:block"}`}>
+          <StepInstructionPane
+            step={currentStep}
+            currentStepIndex={currentStepIndex}
+            totalSteps={totalSteps}
+          />
+        </div>
 
-        {/* Right Pane: Student Notebook & Proof Submissions */}
-        <StudentNotebookPane
-          step={currentStep}
-          currentStepIndex={currentStepIndex}
-          totalSteps={totalSteps}
-          reflectionText={activeStepData.reflectionText || ""}
-          onReflectionChange={(val) => updateActiveStep({ reflectionText: val })}
-          screenshotUrl={activeStepData.screenshotUrl || null}
-          onScreenshotChange={(val) => updateActiveStep({ screenshotUrl: val })}
-          quizPassed={!!activeStepData.quizPassed}
-          onQuizPass={(passed) => updateActiveStep({ quizPassed: passed })}
-          onNextStep={handleNextStep}
-          onPrevStep={handlePrevStep}
-          onFinalizeLab={handleFinalizeLab}
-          isSubmitting={isSubmitting}
-        />
+        {/* Right Pane: Learner Notebook */}
+        <div className={`h-full overflow-hidden bg-[var(--surface)] ${mobileTab === "notebook" ? "block" : "hidden lg:block"}`}>
+          <StudentNotebookPane
+            step={currentStep}
+            currentStepIndex={currentStepIndex}
+            totalSteps={totalSteps}
+            reflectionText={activeStepData.reflectionText || ""}
+            onReflectionChange={(val) => updateActiveStep({ reflectionText: val })}
+            screenshotUrl={activeStepData.screenshotUrl || null}
+            onScreenshotChange={(val) => updateActiveStep({ screenshotUrl: val })}
+            quizPassed={!!activeStepData.quizPassed}
+            onQuizPass={(passed) => updateActiveStep({ quizPassed: passed })}
+            onNextStep={handleNextStep}
+            onPrevStep={handlePrevStep}
+            onFinalizeLab={handleFinalizeLab}
+            isSubmitting={isSubmitting}
+          />
+        </div>
       </div>
 
-      {/* User Profile Binding Modal */}
+      {/* ── User Profile Binding Modal ──────────────────────── */}
       <Modal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        title="Bind Your Engineer Profile"
-        description="To compile a valid Proof of Work report, please provide your legal name and email."
+        title="Engineer Identity Binding"
+        description="To generate an authentic, verifiable Proof of Work dossier, your name and email are bound to your project execution artifacts."
+        size="sm"
       >
-        <form onSubmit={handleSaveProfile} className="space-y-4">
+        <form onSubmit={handleSaveProfile} className="space-y-4 mt-2">
           <Input
-            label="Full Legal Name"
+            label="Full Legal / Engineering Name"
             placeholder="e.g. Folarin Favour Olaoluwapo"
             value={profileName}
             onChange={(e) => setProfileName(e.target.value)}
             required
-            helperText="Appears on official verified completion certificates"
+            helperText="Printed on official verified completion certificates"
           />
           <Input
             label="Email Address"
             type="email"
             placeholder="e.g. folarin@example.com"
             value={profileEmail}
-            onChange={(e) => setProfileEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             required
             helperText="Used for unique cryptographic hash verification"
           />
-          <div className="pt-2 flex justify-end gap-3">
-            <Button type="submit" variant="primary">
-              Confirm & Start Lab
+          <div className="pt-2 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="md"
+              onClick={() => setIsProfileModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="md">
+              Confirm Engineer Identity
             </Button>
           </div>
         </form>
